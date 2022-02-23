@@ -21,7 +21,7 @@ def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 
 def is_png_file(filename):
-    return filename.endswith('.png')
+    return filename.endswith('.jpg')
 
 def make_image_dataset(dir):
     images = []
