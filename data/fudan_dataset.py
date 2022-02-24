@@ -26,8 +26,9 @@ class FudanDataset(BaseDataset):
         self.img_paths = []
         # scenes = [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 36, 37, 38, 39, 40, 46, 47, 48, 49, 50, 61, 62, 63, 64, 65,
         #           66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 91, 92, 93, 94, 95]
-        scenes = [1, 11,12,13,16,17,18,2,21,22,23,26,27,28,3,31,32,33,36,37,38,41,42,43,46,47,48,
-        51,52,53,56,57,58,6,61,62,63,66,67,68,7,71,72,73,76,77,78,8,81,82,83,86,87,88,91,92,93,96,97,98,]
+        # scenes = [1, 11,12,13,16,17,18,2,21,22,23,26,27,28,3,31,32,33,36,37,38,41,42,43,46,47,48,
+        # 51,52,53,56,57,58,6,61,62,63,66,67,68,7,71,72,73,76,77,78,8,81,82,83,86,87,88,91,92,93,96,97,98,]
+        scenes = [1]
         scene_dirs = [os.path.join(self.root, str(scene)) for scene in scenes]
         #scene_dirs = [os.path.join(self.root, scene) for scene in os.listdir(self.root)]
         for scene_dir in scene_dirs:
@@ -71,11 +72,14 @@ class FudanDataset(BaseDataset):
         sequence = []
         dmap_path = img_path = ''
         for i in range(self.tG):
-            img_path = self.img_paths[index][i]
+            # print(type(self.img_paths), type(self.img_paths[i]), self.img_paths[i])
+            # img_path = self.img_paths[index][i]
+            img_path = self.img_paths[i]
             img = Image.open(img_path)
             sequence.append(img)
 
-            dmap_path = self.den_paths[index][i]
+            # dmap_path = self.den_paths[index][i]
+            dmap_path = self.den_paths[i]
             dmap = Image.fromarray(np.load(dmap_path).astype(np.float32, copy=False))
             sequence.append(dmap)
 
@@ -160,5 +164,6 @@ class TestFetcher():
 
     def __len__(self):
         return len(self.dmap_paths) - len(self.img_paths)
+
 
 
