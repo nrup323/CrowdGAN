@@ -40,7 +40,7 @@ class FudanDataset(BaseDataset):
                 offset = (self.tG - 1) * t_step
                 for i in range(len(self.img_paths) - offset):
                     imgs = [self.img_paths[i+j*t_step] for j in range(self.tG)]
-                    self.self.img_paths.append(imgs)
+                    self.img_paths.append(imgs)
                     dens = [self.den_paths[i+j*t_step] for j in range(self.tG)]
                     self.den_paths.append(dens)
         assert(len(self.img_paths) == len(self.den_paths))
@@ -164,6 +164,7 @@ class TestFetcher():
 
     def __len__(self):
         return len(self.dmap_paths) - len(self.img_paths)
+
 
 
 
