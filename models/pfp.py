@@ -6,6 +6,7 @@ from torch.autograd import Variable
 from .base_model import BaseModel
 from . import networks
 from .flow_predict.FlowSD import *
+import torch.nn as nn
 
 
 class PFPModel(BaseModel):
@@ -30,8 +31,8 @@ class PFPModel(BaseModel):
                                       opt.ngf, 'FlowEst', n_layers_G,
                                       opt.norm, opt.init_type, self.gpu_ids,
                                       n_downsampling=opt.G_n_downsampling)
-        self.flowNet = FlowSD()
-        self.flowNet.load_state_dict(torch.load(opt.flownet_ckpt))
+        self.flowNet = FlowSD(args = None, batchNorm = False)
+        self.flowNet.load_state_dict(torch.load(opt.flownet_ckpt)['state_dict'])
         self.flowNet.eval()
         self.flowNet = torch.nn.DataParallel(self.flowNet, device_ids=self.gpu_ids).cuda()
 
@@ -65,7 +66,14 @@ class PFPModel(BaseModel):
         input_post_I = torch.cat([self.input_prev_I, self.input_curr_I], dim=1)[:,3:].contiguous().view(-1, 3, h, w)
         input_prev_I = self.input_prev_I.contiguous().view(-1, 3, h, w)
         flow_predict_input = torch.cat([input_prev_I, input_post_I], dim=1)
-        flow = self.flowNet(flow_predict_input)
+        # flow = self.flowNet(flow_predict_input)
+        flow_n = self.flowNet(flow_predict_input)
+        ###################################
+        print(f"Size of the output is  : {flow_n.shape}")
+        upsamp = nn.Upsample(scale_factor=4, mode = 'bilinear') 
+        flow = upsamp(flow_n) 
+        print(f"Size of the output is  : {flow.shape}")
+        ####################################
         flow_input = flow.contiguous().view(b, -1, h, w)[:,:-2]
         self.flow_gt = flow.contiguous().view(b, -1, h, w)[:,-2:]
         G_input = torch.cat([self.input_last_I, self.input_prev_D, self.input_curr_D, flow_input], dim=1)
@@ -105,4 +113,5 @@ class PFPModel(BaseModel):
 
     def save(self, label):
         self.save_network(self.netG,  'netG',  label, self.gpu_ids)
+
 

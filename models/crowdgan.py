@@ -7,6 +7,7 @@ from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
 from .flow_predict.FlowSD import *
+import torch.nn as nn
 
 class CrowdganModel(BaseModel):
     def name(self):
@@ -42,8 +43,8 @@ class CrowdganModel(BaseModel):
                                      n_downsampling=opt.G_n_downsampling, use_dropout=opt.isDropout, fusion_stage=True)
         self.mapG.load_state_dict(torch.load(opt.mapG_ckpt), strict=False)
 
-        self.flowNet = FlowSD()
-        self.flowNet.load_state_dict(torch.load(opt.flownet_ckpt))
+        self.flowNet = FlowSD(args = None, batchNorm = False)
+        self.flowNet.load_state_dict(torch.load(opt.flownet_ckpt)['state_dict'])
         self.flowNet.eval()
         self.flowNet = torch.nn.DataParallel(self.flowNet, device_ids=self.gpu_ids).cuda()
 
@@ -136,7 +137,14 @@ class CrowdganModel(BaseModel):
         input_post_I = torch.cat([self.input_prev_I, self.input_curr_I], dim=1)[:,3:].contiguous().view(-1, 3, h, w)
         input_prev_I = self.input_prev_I.contiguous().view(-1, 3, h, w)
         flow_predict_input = torch.cat([input_prev_I, input_post_I], dim=1)
-        flow = self.flowNet(flow_predict_input)
+        # flow = self.flowNet(flow_predict_input)
+        flow_n = self.flowNet(flow_predict_input)
+        ###################################
+        print(f"Size of the output is  : {flow_n.shape}")
+        upsamp = nn.Upsample(scale_factor=4, mode = 'bilinear') 
+        flow = upsamp(flow_n) 
+        print(f"Size of the output is  : {flow.shape}")
+        ####################################
         flow_input = flow.contiguous().view(b, -1, h, w)[:,:-2]
         flowG_input = torch.cat([self.input_last_I, self.input_prev_D, self.input_curr_D, flow_input.detach()], dim=1)
         flow_output = self.flowG(flowG_input)
@@ -291,3 +299,4 @@ class CrowdganModel(BaseModel):
             self.save_network(self.netD_PP, 'netD_PP', label, self.gpu_ids)
         if self.opt.with_D_T:
             self.save_network(self.netD_T, 'netD_T', label, self.gpu_ids)
+
